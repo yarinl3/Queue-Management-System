@@ -12,11 +12,16 @@ if __name__ == '__main__':
     elif len(args) > 2:
         print('Too many arguments.')
     else:
-        if args[1] == '1':
-            customer_main()
-        elif args[1] == '2':
-            employee_main()
-        else:
-            print('Bad argument\n'
-                  '1 for customer main.\n'
-                  '2 for employee main.')
+        try:
+            if args[1] == '1':
+                customer_main()
+            elif args[1] == '2':
+                employee_main()
+            else:
+                print('Bad argument\n'
+                      '1 for customer main.\n'
+                      '2 for employee main.')
+        except ConnectionRefusedError:
+            print('Connection Error')
+        except  ConnectionAbortedError:
+            print('Connection Error')

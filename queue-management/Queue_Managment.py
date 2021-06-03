@@ -12,8 +12,7 @@ def conn_decorate(func):
             conn.close()
             return result
         else:
-            print('Error: bad arguments.')
-            return
+            return 'Error: Incorrect arguments.'
     return wrapper
 
 
@@ -30,13 +29,11 @@ def check_args(args):
 def take_number(c, department):
     number = next_number(department)
     if number is None:
-        print(f'Department {department} does not exist.')
-        return
+        return f'Department {department} does not exist.'
+
     ticket_time = get_time()
     c.execute(f"INSERT INTO queue VALUES ({next_id()}, {number}, '{department}', '{ticket_time}', 'pending', -1)")
-    print(f"Number: {number}\n"
-          f"Department: {department}\n"
-          f"time: {ticket_time}\n")
+    return f"Number: {number}\nDepartment: {department}\ntime: {ticket_time}\n"
 
 
 @conn_decorate
@@ -44,43 +41,45 @@ def check_number_exist(c, number):
     try:
         int(number)
     except ValueError:
-        print(f'{number} is not a number')
-        return False
+        return f'{number} is not a number'
     c.execute(f"SELECT * FROM queue WHERE number={number}")
     if c.fetchone() is None:
-        print(f'Ticket number {number} does not exist.')
-        return False
-    return True
+        return f'Ticket number {number} does not exist.'
+    return ''
 
 
 @conn_decorate
 def pull_number(c, username, number):
-    if check_number_exist(number) is False:
-        return False
+    number_exist_flag = check_number_exist(number)
+    if number_exist_flag != '':
+        return number_exist_flag
     number = int(number)
-    if check_permission(username, number) is False:
-        return
+    check_permission_flag = check_permission(username, number)
+    if check_permission_flag != '':
+        return check_permission_flag
     termination_of_treatment(username)
     c.execute(f"UPDATE employee SET serving = {number} WHERE username = '{username}'")
     c.execute(f"SELECT room FROM employee WHERE username = '{username}'")
     room = c.fetchone()[0]
     c.execute(f"UPDATE queue SET status = 'in treatment', room = {room} WHERE number = {number}")
-    print(f'You are now handling {number}')
+    return f'You are now handling {number}'
 
 
 @conn_decorate
 def remove_ticket(c, username, number):
-    if check_number_exist(number) is False:
-        return
+    number_exist_flag = check_number_exist(number)
+    if number_exist_flag != '':
+        return number_exist_flag
     number = int(number)
-    if check_permission(username, number) is False:
-        return
+    check_permission_flag = check_permission(username, number)
+    if check_permission_flag != '':
+        return check_permission_flag
     c.execute(f"SELECT room FROM queue WHERE number={number}")
     room = c.fetchone()[0]
     if room != -1:
         c.execute(f"UPDATE employee SET serving = -1 WHERE room = {room}")
     c.execute(f"DELETE FROM queue WHERE number={number}")
-    print(f'Ticket number {number} deleted successfully.')
+    return f'Ticket number {number} deleted successfully.'
 
 
 @conn_decorate
@@ -88,8 +87,8 @@ def check_permission(c, username, number):
     c.execute(f"SELECT permission FROM employee WHERE username='{username}'")
     permissions = c.fetchone()[0]
     if (number <= 400 and '1' not in permissions) or (400 < number and '2' not in permissions):
-        print('You do not have permission for this operation.')
-        return False
+        return 'You do not have permission for this operation.'
+    return ''
 
 
 @conn_decorate
@@ -118,7 +117,8 @@ def next_customer(c, username):
     if len(ticket_id_list) > 0:
         c.execute(f"UPDATE queue SET status = 'in treatment', room = {room} WHERE ticket_id = {ticket_id_list[0][0]}")
         c.execute(f"UPDATE employee SET serving = {ticket_id_list[0][1]} WHERE username = '{username}'")
-        print(f'You are now handling {ticket_id_list[0][1]}')
+        return f'You are now handling {ticket_id_list[0][1]}'
+    return None
 
 
 @conn_decorate
@@ -143,6 +143,7 @@ def first_number(department):
         return 601
     elif department == 'Other':
         return 701
+    return 701
 
 
 def get_time():
@@ -158,6 +159,7 @@ def return_to_queue(c, username):
     ticket_number = c.fetchone()[0]
     c.execute(f"UPDATE queue SET status = 'pending', room = -1 WHERE number = {ticket_number}")
     c.execute(f"UPDATE employee SET serving = -1 WHERE username = '{username}'")
+    return None
 
 
 @conn_decorate
@@ -167,11 +169,12 @@ def termination_of_treatment(c, username):
     c.execute(f"DELETE FROM queue WHERE number='{ticket_number}'")
     c.execute(f"UPDATE employee SET serving = -1 WHERE username = '{username}'")
     if ticket_number != -1:
-        print(f'Treatment for {ticket_number} was completed.')
+        return f'Treatment for {ticket_number} was completed.'
+    return None
 
 
 @conn_decorate
-def create_table(c):
+def create_queue_table(c):
     try:
         c.execute('CREATE TABLE queue (ticket_id integer, number integer, department text, time text, status text,'
                   ' room integer)')
