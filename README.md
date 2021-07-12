@@ -32,6 +32,6 @@ Other
 
 manager permission: 3
 
-if you want to make new user, log in to manager:
-username: yarinl3
+if you want to make new user, log in to manager:<br>
+username: yarinl3<br>
 password: yarin
